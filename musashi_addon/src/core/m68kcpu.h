@@ -33,6 +33,12 @@
 #ifndef M68KCPU__HEADER
 #define M68KCPU__HEADER
 
+/*
+#ifndef INLINE
+#define INLINE inline
+#endif
+*/
+
 #include "m68k.h"
 #include <limits.h>
 
