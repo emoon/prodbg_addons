@@ -33,6 +33,8 @@
 #ifndef M68KCPU__HEADER
 #define M68KCPU__HEADER
 
+#include <stdio.h>
+
 /*
 #ifndef INLINE
 #define INLINE inline
@@ -1046,7 +1048,20 @@ INLINE uint m68ki_read_imm_32(void)
 #endif /* M68K_EMULATE_PREFETCH */
 }
 
+INLINE void m68ki_set_sp(unsigned int pc)
+{
+	REG_SP = pc;
+}
 
+INLINE uint m68ki_get_sp(void)
+{
+	return REG_SP;
+}
+
+INLINE uint m68ki_get_pc(void)
+{
+	return REG_PC;
+}
 
 /* ------------------------- Top level read/write ------------------------- */
 

@@ -695,6 +695,28 @@ int m68k_execute(int num_cycles)
 	return num_cycles;
 }
 
+void m68k_execute_single_instruction()
+{
+	/* Set tracing accodring to T1. (T0 is done inside instruction) */
+	m68ki_trace_t1(); /* auto-disable (see m68kcpu.h) */
+
+	/* Set the address space for reads */
+	m68ki_use_data_space(); /* auto-disable (see m68kcpu.h) */
+
+	/* Call external hook to peek at CPU */
+	m68ki_instr_hook(); /* auto-disable (see m68kcpu.h) */
+
+	/* Record previous program counter */
+	REG_PPC = REG_PC;
+
+	/* Read an instruction and call its handler */
+	REG_IR = m68ki_read_imm_16();
+	printf("reg_ir 0x%x\n", REG_IR);
+	m68ki_instruction_jump_table[REG_IR]();
+
+	/* Trace m68k_exception, if necessary */
+	//m68ki_exception_if_trace(); /* auto-disable (see m68kcpu.h) */
+}
 
 int m68k_cycles_run(void)
 {

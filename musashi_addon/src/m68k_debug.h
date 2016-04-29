@@ -19,6 +19,7 @@ typedef struct M68KBreakpoint
 int m68k_add_breakpoint(const char* file, int line);
 int m68k_del_breakpoint(uint32_t id);
 M68KBreakpoint* m68k_get_breakpoints(uint32_t* count);
+int m68k_disasm_pc(char* outputBuffer, int outputBufferSize, int pc, int* instCount);
 
 #endif
 

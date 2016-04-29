@@ -17,7 +17,10 @@ static void* createInstance(ServiceFunc* serviceFunc)
 	(void)serviceFunc;
 
 	g_debugger = malloc(sizeof(m68k_debugger));	// this is a bit ugly but for this plugin we only have one instance
-	g_debugger->state = PDDebugState_Running;
+	//g_debugger->state = PDDebugState_Running;
+	g_debugger->state = PDDebugState_StopException;
+
+	m68k_debugger_init();
 
 	return g_debugger;
 }
@@ -65,17 +68,26 @@ static void setExceptionLocation(PDWriter* writer)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void setDisassembly(PDWriter* writer, int start, int instCount)
+static void setDisassembly(PDWriter* writer, int pc, int inst_count)
 {
-	char temp[65536];
+  	PDWrite_event_begin(writer, PDEventType_SetDisassembly);
+    PDWrite_array_begin(writer, "disassembly");
 
-	//m68k_disasm_pc(temp, sizeof(temp), start, &instCount);
+	for (int i = 0; i < inst_count; ++i) {
+		char text[256] = { 0 };
 
-	PDWrite_event_begin(writer, PDEventType_SetDisassembly);
-	PDWrite_u16(writer, "address_start", start);
-	PDWrite_u16(writer, "instruction_count", instCount);
-	PDWrite_string(writer, "string_buffer", temp);
-	PDWrite_event_end(writer);
+		int inst_size = m68k_disassemble(text, pc, M68K_CPU_TYPE_68000);
+
+        PDWrite_array_entry_begin(writer);
+        PDWrite_u32(writer, "address", pc);
+        PDWrite_string(writer, "line", text);
+        PDWrite_array_entry_end(writer);
+
+        pc += inst_size;
+    }
+
+    PDWrite_array_end(writer);
+    PDWrite_event_end(writer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -101,27 +113,6 @@ static void writeDAregisters(PDWriter* writer, char* name, uint32_t* regs)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
-static void writeFloatRegisters(PDWriter* writer)
-{
-	int i;
-	char name[4] = "fp0";
-
-	for (i = 0; i < 8; ++i)
-	{
-		PDWrite_array_entry_begin(writer);
-		PDWrite_float(writer, "register", (float)m68ki_cpu.fpr[i].v.f);
-		PDWrite_string(writer, "name", name);
-		PDWrite_array_entry_end(writer);
-
-		// some trickery here (name is always in fpX format so fp0,fp1,fp2,etc...)
-		name[2] += 1;
-	}
-}
-*/
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static void setRegisters(PDWriter* writer)
 {
 	PDWrite_event_begin(writer, PDEventType_SetRegisters);
@@ -129,7 +120,6 @@ static void setRegisters(PDWriter* writer)
 
 	writeDAregisters(writer, "d0", (uint32_t*)&m68ki_cpu.dar[0]);
 	writeDAregisters(writer, "a0", (uint32_t*)&m68ki_cpu.dar[8]);
-	//writeFloatRegisters(writer);
 
 	// PC
 
@@ -200,7 +190,7 @@ static void sendState(PDWriter* writer)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void doAction(m68k_debugger* debugger, PDAction action, PDWriter* writer)
+static void do_action(m68k_debugger* debugger, PDAction action, PDWriter* writer)
 {
 	int t = (int)action;
 
@@ -255,9 +245,11 @@ static PDDebugState update(void* userData, PDAction action, PDReader* reader, PD
 	int event = 0;
 	m68k_debugger* debugger = (m68k_debugger*)userData;
 
+	m68k_debugger_update();
+
 	// if we have breakpoint set from the outside, send the state and put us into trace mode
 
-	doAction(debugger, action, writer);
+	do_action(debugger, action, writer);
 
 	if (debugger->state == PDDebugState_StopBreakpoint)
 	{
@@ -289,4 +281,10 @@ PDBackendPlugin s_debuggerPlugin =
     0,
     update,
 };
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PD_EXPORT void InitPlugin(RegisterPlugin* registerPlugin, void* private_data) {
+    registerPlugin(PD_BACKEND_API_VERSION, &s_debuggerPlugin, private_data);
+}
 
