@@ -14,8 +14,8 @@ extern void m68k_execute_single_instruction();
 
 int m68k_debugger_init()
 {
-	void* m68k_data = malloc(12 * 1024 * 1024);
-	int sizes = 4 * 1024 * 1024;
+	void* m68k_data = malloc(2 * 1024 * 1024);
+	int sizes = 512 * 1024;
 
 	m68k_code_init(m68k_data, sizes, sizes, sizes);
 
@@ -31,6 +31,7 @@ int m68k_debugger_init()
 	m68ki_push_32(0);
 
 	m68k_elf_load("/Users/danielcollin/temp/test.elf");
+	m68k_elf_link();
 
 	// always run from 0
 	// m68ki_jump(pc);

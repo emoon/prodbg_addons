@@ -376,8 +376,7 @@ static void swapElfObject(M68KFile* file, uint8_t* fileBuffer, const char* secti
 
 static M68K_INLINE uint32_t getOffset(const uint8_t* end, const uint8_t* start)
 {
-	//return (uint32_t)(((uintptr_t)end) - ((uintptr_t)start));
-	return (uint32_t)(((uintptr_t)end));
+	return (uint32_t)(((uintptr_t)end) - ((uintptr_t)start));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
